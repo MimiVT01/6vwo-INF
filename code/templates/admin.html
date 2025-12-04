@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <style>
+    body { 
+      background: #f4f4f4; 
+      padding: 20px; 
+      text-align: center; 
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      transition: background 0.3s ease-in-out;
+    }
+
+    h1 { color: #333; margin-bottom: 20px; }
+
+    /* Top overlay box for buttons + add-product form */
+    .overlay {
+      background: rgba(255,255,255,0.85);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px auto;
+      max-width: 380px; /* width roughly matching add product form */
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .buttons button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .buttons button:hover { background-color: #0056b3; }
+
+    .admin-form { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      width: 350px; 
+      margin: 0 auto; 
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
+    }
+    input[type=text], input[type=number], input[type=password] { 
+      padding: 8px; margin: 5px 0; width: 80%; border-radius: 5px; border: 1px solid #ccc; 
+    }
+
+    /* Products & Users boxes */
+    .section-box {
+      background: rgba(255,255,255,0.85);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px auto;
+      max-width: 900px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 10px;
+    }
+    th, td { 
+      padding: 12px 15px; 
+      border-bottom: 1px solid #ddd; 
+      text-align: center; 
+    }
+    th { background-color: #007bff; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #f1f1f1; }
+
+    .small-btn { padding: 5px 10px; margin: 2px; border: none; border-radius: 5px; cursor: pointer; color: white; }
+    .update-btn { background-color: #28a745; }
+    .update-btn:hover { background-color: #218838; }
+    .delete-btn { background-color: #dc3545; }
+    .delete-btn:hover { background-color: #c82333; }
+
+    #userSearch { padding: 8px; width: 250px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; }
+
+    /* Floating buttons for background */
+    #uploadBgBtn, #resetBgBtn {
+      position: fixed;
+      bottom: 20px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      transition: background 0.3s;
+    }
+    #uploadBgBtn { right: 80px; background-color: #007bff; }
+    #resetBgBtn { right: 140px; background-color: #007bff; }
+    #uploadBgBtn:hover, #resetBgBtn:hover { background-color: #0056b3; }
+    #bgInput { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Top overlay box -->
+  <div class="overlay">
+    <h1>Admin Panel</h1>
+    <div class="buttons">
+      <button onclick="window.location.href=BASE + '/shop'">Back to Shop</button>
+      <button onclick="window.location.href=BASE + '/admin/orders'">Orders</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="admin-form">
+      <h3>Add New Product</h3>
+      <input type="text" id="newName" placeholder="Product Name"><br>
+      <input type="number" id="newStock" placeholder="Stock" min="0"><br>
+      <button id="addBtn">Add Product</button>
+    </div>
+  </div>
+
+  <!-- Products section -->
+  <div class="section-box">
+    <h2>Products</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Stock</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="products"></tbody>
+    </table>
+  </div>
+
+  <!-- Users section -->
+  <div class="section-box">
+    <h2>Users</h2>
+    <div style="margin: 10px auto; text-align: right;">
+      <input type="text" id="userSearch" placeholder="Search by B-number...">
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Bnumber</th>
+          <th>Admin</th>
+          <th>Password (reset)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users"></tbody>
+    </table>
+  </div>
+
+  <!-- Background buttons -->
+  <button id="uploadBgBtn" title="Change Background">🖼️</button>
+  <button id="resetBgBtn" title="Reset Background">♻️</button>
+  <input type="file" id="bgInput" accept="image/*">
+
+  <script>
+    const BASE = "/a6ag2";
+
+    // Logout
+    async function logout(){
+      try { await fetch(BASE + "/logout"); } catch{}
+      window.location.href = BASE + "/";
+    }
+
+    // Products
+    async function loadProducts(){
+      let res = await fetch(`${BASE}/admin/products`);
+      let products = await res.json();
+      let tbody = document.getElementById("products");
+      tbody.innerHTML = "";
+      products.forEach(p => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.id}</td>
+          <td><input type="text" id="name-${p.id}" value="${p.name}"></td>
+          <td><input type="number" id="stock-${p.id}" value="${p.stock}" min="0"></td>
+          <td>
+            <button class="small-btn update-btn" onclick="updateProduct(${p.id})">Update</button>
+            <button class="small-btn delete-btn" onclick="deleteProduct(${p.id})">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    async function updateProduct(id){
+      let name = document.getElementById(`name-${id}`).value;
+      let stock = parseInt(document.getElementById(`stock-${id}`).value);
+      await fetch(`${BASE}/admin/products/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id,name,stock}) });
+      loadProducts();
+    }
+    async function deleteProduct(id){
+      if(!confirm("Are you sure?")) return;
+      await fetch(`${BASE}/admin/products/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id}) });
+      loadProducts();
+    }
+    document.getElementById("addBtn").addEventListener("click", async ()=> {
+      let name=document.getElementById("newName").value;
+      let stock=parseInt(document.getElementById("newStock").value);
+      if(name && !isNaN(stock)){
+        await fetch(`${BASE}/admin/products/add`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name,stock}) });
+        document.getElementById("newName").value="";
+        document.getElementById("newStock").value="";
+        loadProducts();
+      }
+    });
+
+    // Users
+    async function loadUsers(query=""){
+      const url = query?`${BASE}/admin/users/search?query=${encodeURIComponent(query)}`:`${BASE}/admin/users`;
+      let res=await fetch(url);
+      let users=await res.json();
+      let tbody=document.getElementById("users");
+      tbody.innerHTML="";
+      users.forEach(u=>{
+        let tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${u.id}</td>
+          <td><input type="text" id="b_${u.id}" value="${u.bnumber}"></td>
+          <td><input type="checkbox" id="a_${u.id}" ${u.is_admin?"checked":""}></td>
+          <td><input type="password" placeholder="New password" id="p_${u.id}"></td>
+          <td>
+            <button class="small-btn update-btn" onclick="updateUser(${u.id})">Update</button>
+            <button class="small-btn delete-btn" onclick="deleteUser(${u.id})">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    async function updateUser(id){
+      let bnumber=document.getElementById(`b_${id}`).value;
+      let password=document.getElementById(`p_${id}`).value;
+      let is_admin=document.getElementById(`a_${id}`).checked?1:0;
+      await fetch(`${BASE}/admin/users/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id,bnumber,password,is_admin}) });
+      loadUsers(document.getElementById("userSearch").value);
+    }
+    async function deleteUser(id){
+      if(!confirm("Are you sure?")) return;
+      await fetch(`${BASE}/admin/users/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id}) });
+      loadUsers(document.getElementById("userSearch").value);
+    }
+    let searchTimeout;
+    document.getElementById("userSearch").addEventListener("input", e=>{
+      clearTimeout(searchTimeout);
+      searchTimeout=setTimeout(()=>{ loadUsers(e.target.value.trim()); }, 300);
+    });
+
+    // Background
+    const bgBtn=document.getElementById("uploadBgBtn");
+    const bgInput=document.getElementById("bgInput");
+    const resetBgBtn=document.getElementById("resetBgBtn");
+
+    bgBtn.addEventListener("click", ()=>bgInput.click());
+    bgInput.addEventListener("change", async ()=>{
+      const file=bgInput.files[0];
+      if(!file) return;
+      const formData=new FormData();
+      formData.append("background", file);
+      const res=await fetch(`${BASE}/upload_background`, { method:"POST", body:formData });
+      if(res.ok){ 
+        const data=await res.json(); 
+        document.body.style.backgroundImage=`url('${BASE}/${data.url}?v=${Date.now()}')`; 
+      }
+      else alert("Failed to upload background");
+    });
+
+    resetBgBtn.addEventListener("click", async ()=>{
+      if(!confirm("Revert to default background?")) return;
+      try {
+        const res = await fetch(`${BASE}/reset_background`, { method:"POST" });
+        const data = await res.json();
+        document.body.style.backgroundImage=`url('${BASE}/${data.url}?v=${Date.now()}')`;
+      } catch(e) { alert("Failed to reset background"); }
+    });
+
+    // Apply saved background on page load
+    async function applySavedBackground() {
+      try {
+        const res = await fetch(`${BASE}/api/background`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.path) {
+          document.body.style.backgroundImage = `url('${BASE}/${data.path}?v=${Date.now()}')`;
+        }
+      } catch (e) {
+        console.warn("Failed to load saved background:", e);
+      }
+    }
+
+    // Init
+    loadProducts();
+    loadUsers();
+    applySavedBackground();
+  </script>
+</body>
+</html>
