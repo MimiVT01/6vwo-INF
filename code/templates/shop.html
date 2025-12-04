@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shop</title>
+  <style>
+    body { 
+      background: #f4f4f4; 
+      padding: 40px 20px; 
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      transition: background 0.3s ease-in-out;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 { 
+      text-align: center; 
+      color: #333; 
+      margin-top: 0;
+    }
+
+    .content-box {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 700px;
+      margin: 0 auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .buttons { 
+      text-align: center; 
+      margin-bottom: 20px; 
+    }
+
+    .buttons button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .buttons button:hover { background-color: #0056b3; }
+
+    .product-card {
+      background: white;
+      margin: 10px auto;
+      padding: 15px 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .product-card input {
+      width: 60px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    #checkoutBtn {
+      display: block;
+      margin: 25px auto 0;
+      padding: 10px 30px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #checkoutBtn:hover { background-color: #1e7e34; }
+
+    #uploadBgBtn, #resetBgBtn {
+      position: fixed;
+      bottom: 20px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      transition: background 0.3s;
+    }
+
+    #uploadBgBtn { right: 80px; background-color: #007bff; }
+    #resetBgBtn { right: 140px; background-color: #007bff; }
+
+    #uploadBgBtn:hover, #resetBgBtn:hover { background-color: #0056b3; }
+
+    #bgInput { display: none; }
+
+    /* ---------- Custom Popup Styles ---------- */
+    .popup {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    .popup-content {
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      width: 400px;
+      max-width: 90%;
+      margin: 15% auto;
+      padding: 40px 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      text-align: center;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .popup-text {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    #closePopup {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 28px;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    #closePopup:hover { color: #ff4444; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="content-box">
+    <h1>Welcome to the Shop!</h1>
+
+    <div class="buttons">
+      <button onclick="logout()">Logout</button>
+      <button onclick="window.location.href=BASE + '/history'">View Order History</button>
+    </div>
+
+    <div id="products"></div>
+
+    <button id="checkoutBtn">Checkout</button>
+  </div>
+
+  <!-- Custom Error Popup -->
+  <div id="errorPopup" class="popup">
+    <div class="popup-content">
+      <span id="closePopup">&times;</span>
+      <div class="popup-text" id="popupMessage"></div>
+    </div>
+  </div>
+
+  <!-- Background buttons -->
+  <button id="uploadBgBtn" title="Change Background">🖼️</button>
+  <button id="resetBgBtn" title="Reset Background">♻️</button>
+  <input type="file" id="bgInput" accept="image/*">
+
+  <script>
+    const BASE = "/a6ag2";
+
+    async function logout() {
+      try { await fetch(BASE + "/logout", { method: "GET" }); } catch {}
+      window.location.href = BASE + "/";
+    }
+
+    let cart = [];
+
+    async function loadProducts() {
+      const res = await fetch(BASE + "/products");
+      const products = await res.json();
+      const container = document.getElementById("products");
+      container.innerHTML = "";
+
+      if (products.length === 0) {
+        container.innerHTML = "<p style='text-align:center;'>No products available.</p>";
+        return;
+      }
+
+      products.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "product-card";
+        div.innerHTML = `
+          <span>${p.name} (Stock: ${p.stock})</span>
+          <input type="number" id="qty-${p.id}" min="0" max="${p.stock}" value="0">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById("checkoutBtn").addEventListener("click", async () => {
+      const res = await fetch(BASE + "/products");
+      const products = await res.json();
+
+      cart = products.map(p => ({
+        id: p.id,
+        name: p.name,
+        quantity: parseInt(document.getElementById(`qty-${p.id}`).value)
+      })).filter(item => item.quantity > 0);
+
+      if (cart.length === 0) {
+        showErrorPopup("Select at least one product!", `${BASE}/static/images/mimierror.gif`);
+        return;
+      }
+
+      const check = await fetch(BASE + "/check_stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cart })
+      });
+
+      const data = await check.json();
+      if (data.success) {
+        window.location.href = BASE + "/checkout";
+      } else {
+        showErrorPopup(data.msg, `${BASE}/static/images/mimierror.gif`);
+      }
+    });
+
+    // ------------------ Load user background ------------------
+    async function loadUserBackground() {
+      try {
+        const res = await fetch(`${BASE}/api/background`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.path) {
+          document.body.style.backgroundImage = `url('${BASE}/${data.path}?v=${Date.now()}')`;
+        }
+      } catch (err) {
+        console.error("Error loading background:", err);
+      }
+    }
+
+    // ------------------ Background upload/reset ------------------
+    const bgBtn = document.getElementById("uploadBgBtn");
+    const bgInput = document.getElementById("bgInput");
+    const resetBgBtn = document.getElementById("resetBgBtn");
+
+    bgBtn.addEventListener("click", () => bgInput.click());
+    bgInput.addEventListener("change", async () => {
+      const file = bgInput.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append("background", file);
+      const res = await fetch(`${BASE}/upload_background`, { method: "POST", body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        document.body.style.backgroundImage = `url('${BASE}/${data.url}?v=${Date.now()}')`;
+      } else {
+        showErrorPopup("Failed to upload background", `${BASE}/static/images/mimierror.gif`);
+      }
+    });
+
+    resetBgBtn.addEventListener("click", async () => {
+      if (!confirm("Revert to default background?")) return;
+      try {
+        const res = await fetch(`${BASE}/reset_background`, { method: "POST" });
+        const data = await res.json();
+        document.body.style.backgroundImage = `url('${BASE}/${data.url}?v=${Date.now()}')`;
+      } catch (e) {
+        showErrorPopup("Failed to reset background", `${BASE}/static/images/mimierror.gif`);
+      }
+    });
+
+    // ------------------ Custom popup function ------------------
+    function showErrorPopup(message, backgroundUrl) {
+      const popup = document.getElementById("errorPopup");
+      const popupMessage = document.getElementById("popupMessage");
+      const popupContent = document.querySelector(".popup-content");
+      popupMessage.textContent = message;
+      popupContent.style.backgroundImage = `url('${backgroundUrl}')`;
+      popup.style.display = "block";
+    }
+
+    document.getElementById("closePopup").addEventListener("click", () => {
+      document.getElementById("errorPopup").style.display = "none";
+    });
+
+    window.addEventListener("click", (event) => {
+      const popup = document.getElementById("errorPopup");
+      if (event.target === popup) popup.style.display = "none";
+    });
+
+    // Initialize
+    loadProducts();
+    loadUserBackground();
+  </script>
+</body>
+</html>

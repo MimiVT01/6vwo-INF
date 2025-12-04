@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Checkout</title>
+  <style>
+    body { 
+      background: #f4f4f4; 
+      padding: 20px; 
+      text-align: center; 
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      transition: background 0.3s ease-in-out;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Center box with semi-transparent background */
+    .content-box {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 600px;
+      margin: 60px auto;
+      padding: 40px 20px;
+    }
+
+    h1 { color: #333; margin-bottom: 20px; }
+
+    .buttons button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+      background-color: #007bff;
+      transition: background 0.3s;
+    }
+
+    .buttons button:hover { background-color: #0056b3; }
+
+    .success-msg {
+      background: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="content-box">
+    <h1>Checkout Complete!</h1>
+    <div class="success-msg">Thank you for your purchase! 🛒</div>
+
+    <div class="buttons" style="margin-top:30px;">
+      <button onclick="window.location.href=BASE + '/shop'">Back to Shop</button>
+      <button onclick="window.location.href=BASE + '/history'">View Order History</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const BASE = "/a6ag2";
+
+    async function logout() {
+      try { await fetch(BASE + "/logout", { method: "GET" }); } catch {}
+      window.location.href = BASE + "/";
+    }
+
+    // ------------------ Load user background ------------------
+    async function loadUserBackground() {
+      try {
+        const res = await fetch(`${BASE}/api/background`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.path) {
+          document.body.style.backgroundImage = `url('${BASE}/${data.path}?v=${Date.now()}')`;
+        }
+      } catch (err) {
+        console.error("Error loading background:", err);
+      }
+    }
+
+    loadUserBackground();
+  </script>
+</body>
+</html>

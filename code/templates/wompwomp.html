@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Access Denied</title>
+  <style>
+    :root {
+      --wrapper-max: 320px;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 80px 16px;
+      background-color: #f5f5f5;
+      margin: 0;
+    }
+
+    h1 {
+      color: #c0392b;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 18px;
+      color: #555;
+    }
+
+    .action-wrap {
+      display: flex;
+      flex-direction: column;  
+      align-items: center;      
+      gap: 16px;                 
+      width: 90%;
+      max-width: var(--wrapper-max);
+      margin: 0 auto 0;      
+    }
+
+    /* button styles */
+    #returnLink {
+      display: inline-block;
+      padding: 10px 20px;
+      text-decoration: none;
+      color: #fff;
+      background-color: #007bff;
+      border-radius: 5px;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    #returnLink:hover { background-color: #0056b3; }
+
+
+    .image-box {
+      width: 100%;           
+      background-color: #e0e0e0;
+      border: 3px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .image-box img {
+      display: block;
+      width: 100%;      
+      height: auto;
+      border-radius: 7px;
+    }
+
+
+    @media (max-width: 360px) {
+      :root { --wrapper-max: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🦐 Womp Womp 🦐</h1>
+  <p>You don’t have permission to access this page.</p>
+
+  <div class="action-wrap">
+    <a id="returnLink" href="#">Return to Shop</a>
+
+
+    <div class="image-box">
+      <img id="deniedImage" src="" alt="Access Denied Image">
+    </div>
+  </div>
+
+  <script>
+
+    const BASE = "/a6ag2";
+
+
+    const imageOptions = ["wompwomp.jpg", "wompwomp1.jpg"];
+    const randomImage = imageOptions[Math.floor(Math.random() * imageOptions.length)];
+
+
+    document.getElementById("returnLink").href = `${BASE}/shop`;
+    document.getElementById("deniedImage").src = `${BASE}/static/images/${randomImage}`;
+  </script>
+</body>
+</html>

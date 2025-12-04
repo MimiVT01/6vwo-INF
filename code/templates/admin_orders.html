@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>All Orders - Admin</title>
+  <style>
+    body { 
+      background: #f4f4f4; 
+      padding: 20px; 
+      text-align: center; 
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      transition: background 0.3s ease-in-out;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Center box with semi-transparent background */
+    .content-box {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 30px;
+    }
+
+    h1 { color: #333; margin-bottom: 20px; }
+
+    .buttons button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .buttons button:hover { background-color: #0056b3; }
+
+    .search-container {
+      margin: 20px auto;
+      text-align: center;
+    }
+    .search-container input {
+      width: 250px;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    .search-container button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .search-container button:hover { background-color: #218838; }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th { background-color: #007bff; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr.fulfilled { background-color: #d4edda; color: #155724; }
+    tr:hover { background-color: #f1f1f1; }
+
+    .fulfill-btn {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .fulfill-btn:hover { background-color: #218838; }
+    .fulfilled-label { font-weight: bold; }
+
+    /* Floating background buttons */
+    #uploadBgBtn, #resetBgBtn {
+      position: fixed;
+      bottom: 20px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+      transition: background 0.3s;
+    }
+    #uploadBgBtn { right: 80px; background-color: #007bff; }
+    #resetBgBtn { right: 140px; background-color: #007bff; }
+    #uploadBgBtn:hover, #resetBgBtn:hover { background-color: #0056b3; }
+    #bgInput { display: none; }
+
+    footer { margin-top: 30px; text-align: center; }
+    footer a { font-size: 10px; color: #aaa; text-decoration: none; }
+    footer a:hover { color: #666; }
+  </style>
+</head>
+<body>
+  <div class="content-box">
+    <h1>All Orders</h1>
+
+    <div class="buttons">
+      <button id="backBtn">Back to Admin Panel</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search by B-number...">
+      <button onclick="searchOrders()">Search</button>
+      <button onclick="resetSearch()">Reset</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>B-Number</th>
+          <th>Product Name</th>
+          <th>Quantity</th>
+          <th>Timestamp</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="ordersBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Background buttons -->
+  <button id="uploadBgBtn" title="Change Background">🖼️</button>
+  <button id="resetBgBtn" title="Reset Background">♻️</button>
+  <input type="file" id="bgInput" accept="image/*">
+
+  <footer>
+    <a id="meruLink" href="#">© 2025 Mimi INC.</a>
+  </footer>
+
+  <script>
+    const BASE = "/a6ag2";
+
+    // Navigation
+    document.getElementById("backBtn").addEventListener("click", () => {
+      window.location.href = BASE + "/admin";
+    });
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      try { await fetch(BASE + "/logout"); } catch {}
+      window.location.href = BASE + "/";
+    });
+
+    // Load and render orders
+    async function loadOrders(){
+      let res = await fetch(`${BASE}/admin/orders/data`);
+      let data = await res.json();
+      renderOrders(data);
+    }
+
+    function renderOrders(data){
+      let tbody = document.getElementById("ordersBody");
+      tbody.innerHTML = "";
+      if(data.length === 0){
+        tbody.innerHTML = `<tr><td colspan="5">No orders found.</td></tr>`;
+        return;
+      }
+
+      data.forEach(order => {
+        let localTime = "N/A";
+        if(order.timestamp){
+          let d = new Date(order.timestamp);
+          localTime = !isNaN(d) ? d.toLocaleString() : order.timestamp;
+        }
+
+        let tr = document.createElement("tr");
+        if(order.fulfilled) tr.classList.add("fulfilled");
+        tr.innerHTML = `
+          <td>${order.bnumber}</td>
+          <td>${order.product_name}</td>
+          <td>${order.quantity}</td>
+          <td>${localTime}</td>
+          <td>${order.fulfilled
+              ? '<span class="fulfilled-label">Fulfilled</span>'
+              : `<button class="fulfill-btn" onclick="fulfillOrder(${order.id})">Mark Fulfilled</button>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function fulfillOrder(id){
+      if(!confirm("Mark this order as fulfilled?")) return;
+      let res = await fetch(`${BASE}/admin/orders/fulfill`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({id})
+      });
+      let data = await res.json();
+      if(data.success) loadOrders();
+      else alert("Error: " + data.msg);
+    }
+
+    async function searchOrders(){
+      const query = document.getElementById("searchInput").value.trim();
+      let res = await fetch(`${BASE}/admin/orders/search?query=${encodeURIComponent(query)}`);
+      let data = await res.json();
+      renderOrders(data);
+    }
+
+    function resetSearch(){
+      document.getElementById("searchInput").value = "";
+      loadOrders();
+    }
+
+    document.getElementById("searchInput").addEventListener("keypress", e => {
+      if(e.key === "Enter") searchOrders();
+    });
+
+    document.getElementById("meruLink").href = `${BASE}/static/meru.jpg`;
+
+    // ------------------ Background ------------------
+    const bgBtn=document.getElementById("uploadBgBtn");
+    const bgInput=document.getElementById("bgInput");
+    const resetBgBtn=document.getElementById("resetBgBtn");
+
+    bgBtn.addEventListener("click", ()=>bgInput.click());
+
+    bgInput.addEventListener("change", async ()=>{
+      const file=bgInput.files[0];
+      if(!file) return;
+      const formData=new FormData();
+      formData.append("background", file);
+      const res=await fetch(`${BASE}/upload_background`, { method:"POST", body:formData });
+      if(res.ok){
+        const data=await res.json();
+        document.body.style.backgroundImage=`url('${BASE}/${data.url}?v=${Date.now()}')`;
+      } else alert("Failed to upload background");
+    });
+
+    resetBgBtn.addEventListener("click", async ()=>{
+      if(!confirm("Revert to default background?")) return;
+      try {
+        const res = await fetch(`${BASE}/reset_background`, { method:"POST" });
+        const data = await res.json();
+        document.body.style.backgroundImage=`url('${BASE}/${data.url}?v=${Date.now()}')`;
+      } catch(e){
+        alert("Failed to reset background");
+      }
+    });
+
+    async function loadUserBackground(){
+      try{
+        const res = await fetch(`${BASE}/api/background`);
+        if(!res.ok) return;
+        const data = await res.json();
+        if(data.success && data.path){
+          document.body.style.backgroundImage = `url('${BASE}/${data.path}?v=${Date.now()}')`;
+        }
+      }catch(err){ console.error("Error loading background:", err); }
+    }
+
+    // Initialize
+    loadOrders();
+    loadUserBackground();
+  </script>
+</body>
+</html>
